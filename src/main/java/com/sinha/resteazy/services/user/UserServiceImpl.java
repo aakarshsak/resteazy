@@ -5,13 +5,16 @@ import com.sinha.resteazy.entities.User;
 import com.sinha.resteazy.exceptions.DuplicateEntryException;
 import com.sinha.resteazy.exceptions.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class UserServiceImpl implements UserService{
+public class UserServiceImpl implements UserService {
 
     private UserRepository userRepository;
 
@@ -49,5 +52,10 @@ public class UserServiceImpl implements UserService{
         User user = findUserById(id);
         userRepository.delete(user);
         return user;
+    }
+
+    @Override
+    public User loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByEmail(username).orElseThrow(() -> new UserNotFoundException("User does not exist..."));
     }
 }

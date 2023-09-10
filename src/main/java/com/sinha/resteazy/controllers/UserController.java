@@ -7,12 +7,13 @@ import com.sinha.resteazy.services.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/admin/users")
 public class UserController {
 
     UserService userService;
@@ -34,13 +35,13 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public User getUserById(@PathVariable long id) {
+    public UserDetails getUserById(@PathVariable long id) {
         return userService.findUserById(id);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Object> deleteUser(@PathVariable long id) {
-        User user = userService.deleteUserById(id);
+        UserDetails user = userService.deleteUserById(id);
         return new ResponseEntity<>(new SuccessResponse(user, HttpStatus.ACCEPTED.value()), HttpStatus.ACCEPTED);
     }
 

@@ -36,4 +36,11 @@ public class CustomExceptionHandler {
         logger.error(this.getClass().toString(), exception);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
+
+//    @ExceptionHandler
+//    public ResponseEntity<ErrorResponse> userNotFoundExceptionHandler(UserNotFoundException exception) {
+//        ErrorResponse response = new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), exception.getMessage(), System.currentTimeMillis());
+//        logger.error(this.getClass().toString(), exception);
+//        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+//    }
 }
