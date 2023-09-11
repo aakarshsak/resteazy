@@ -1,27 +1,54 @@
 package com.sinha.resteazy.services;
 
+import com.sinha.resteazy.daos.TokenRepository;
+import com.sinha.resteazy.entities.Token;
+import com.sinha.resteazy.entities.TokenType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
-import java.util.Base64;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 @Service
 public class JwtService {
 
-    private final String signInkey = "20e052844e7b2eda8c4780d054a5de37cf112a124c42b75abea1dc3a9ce29180";
+    @Value("${application.security.jwt.signInKey}")
+    private String signInkey;
+
+    @Value("${application.security.jwt.expiration}")
+    private long expiration;
+
+    @Value("${application.security.jwt.refreshToken.expiration}")
+    private long refreshExpiration;
+
+    private TokenRepository tokenRepository;
+
+    @Autowired
+    public JwtService(TokenRepository tokenRepository) {
+        this.tokenRepository = tokenRepository;
+    }
 
     public boolean isValidToken(String token, UserDetails userDetails) {
+        if(isExpiredToken(token)) {
+            setTokenExpired(token);
+        }
         return extractUsername(token).equals(userDetails.getUsername()) && !isExpiredToken(token);
+    }
+
+    private void setTokenExpired(String token) {
+        Token tokenData = tokenRepository.findById(token).orElse(null);
+        if(tokenData != null) {
+            tokenData.setExpired(true);
+        }
+        tokenRepository.save(tokenData);
     }
 
     private boolean isExpiredToken(String token) {
@@ -59,14 +86,49 @@ public class JwtService {
         return generateToken(userDetails, new HashMap<>());
     }
 
-    private String generateToken(UserDetails userDetails, Map<String, Object> extraClaims) {
+    public String generateToken(UserDetails userDetails, Map<String, Object> extraClaims) {
+        return buildToken(userDetails, extraClaims, expiration);
+    }
+
+    public String generateRefreshToken(UserDetails userDetails) {
+        return buildToken(userDetails, new HashMap<>(), refreshExpiration);
+    }
+
+    private String buildToken(UserDetails userDetails, Map<String, Object> extraClaims, long expiration) {
         return Jwts
                 .builder()
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 15))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public void revokeUserTokens(String userEmail) {
+        List<Token> allTokens = tokenRepository.findAllByUserEmail(userEmail);
+        if(allTokens.isEmpty()) return;
+        allTokens.forEach(token -> {
+            token.setRevoked(true);
+            token.setExpired(true);
+        });
+        tokenRepository.saveAll(allTokens);
+    }
+
+    public void saveToken(String token, String userEmail) {
+        Token token1 = Token.builder()
+                .token(token)
+                .tokenType(TokenType.BEARER)
+                .expired(false)
+                .revoked(false)
+                .userEmail(userEmail)
+                .build();
+        tokenRepository.save(token1);
+    }
+
+    public Token getToken(String token) {
+        Optional<Token> tokenData = tokenRepository.findById(token);
+        if(!tokenData.isPresent()) return null;
+        return tokenData.get();
     }
 }

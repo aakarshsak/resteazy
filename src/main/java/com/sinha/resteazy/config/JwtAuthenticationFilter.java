@@ -1,5 +1,6 @@
 package com.sinha.resteazy.config;
 
+import com.sinha.resteazy.entities.Token;
 import com.sinha.resteazy.services.JwtService;
 import com.sinha.resteazy.services.user.UserService;
 import jakarta.servlet.FilterChain;
@@ -41,7 +42,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String userEmail = jwtService.extractUsername(token);
         if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userService.loadUserByUsername(userEmail);
-            if(jwtService.isValidToken(token, userDetails)) {
+            Token tokenData = jwtService.getToken(token);
+            boolean isValidToken = tokenData != null && !tokenData.isExpired() && !tokenData.isRevoked();
+            if(jwtService.isValidToken(token, userDetails) && isValidToken) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);

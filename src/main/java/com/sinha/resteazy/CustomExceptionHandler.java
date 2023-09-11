@@ -3,6 +3,7 @@ package com.sinha.resteazy;
 import com.sinha.resteazy.entities.ErrorResponse;
 import com.sinha.resteazy.exceptions.DuplicateEntryException;
 import com.sinha.resteazy.exceptions.RestaurantNotFoundException;
+import com.sinha.resteazy.exceptions.TokenNotFoundException;
 import com.sinha.resteazy.exceptions.UserNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +38,10 @@ public class CustomExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-//    @ExceptionHandler
-//    public ResponseEntity<ErrorResponse> userNotFoundExceptionHandler(UserNotFoundException exception) {
-//        ErrorResponse response = new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), exception.getMessage(), System.currentTimeMillis());
-//        logger.error(this.getClass().toString(), exception);
-//        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
-//    }
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> userNotFoundExceptionHandler(TokenNotFoundException exception) {
+        ErrorResponse response = new ErrorResponse(HttpStatus.NOT_FOUND.value(), exception.getMessage(), System.currentTimeMillis());
+        logger.error(this.getClass().toString(), exception);
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
 }

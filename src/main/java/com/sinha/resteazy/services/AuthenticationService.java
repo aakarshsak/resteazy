@@ -1,20 +1,27 @@
 package com.sinha.resteazy.services;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sinha.resteazy.controllers.TokenResponse;
-import com.sinha.resteazy.entities.LoginRequestBody;
-import com.sinha.resteazy.entities.RegisterRequestBody;
-import com.sinha.resteazy.entities.Role;
-import com.sinha.resteazy.entities.User;
+import com.sinha.resteazy.entities.*;
 import com.sinha.resteazy.services.JwtService;
 import com.sinha.resteazy.services.user.UserService;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
 
 @Service
 public class AuthenticationService {
@@ -46,10 +53,12 @@ public class AuthenticationService {
                 .role(requestBody.getRole())
                 .build();
 
-
         userService.addNewUser(user);
         String token = jwtService.generateToken(user);
-        return TokenResponse.builder().token(token).build();
+        jwtService.revokeUserTokens(user.getEmail());
+        jwtService.saveToken(token, user.getEmail());
+        String refreshToken = jwtService.generateRefreshToken(user);
+        return TokenResponse.builder().accessToken(token).refreshToken(refreshToken).build();
     }
 
     public TokenResponse login(LoginRequestBody request) {
@@ -58,6 +67,34 @@ public class AuthenticationService {
         UserDetails user = userDetailsService.loadUserByUsername(request.getUsername());
         String token = jwtService.generateToken(user);
 
-        return TokenResponse.builder().token(token).build();
+        jwtService.revokeUserTokens(user.getUsername());
+        jwtService.saveToken(token, user.getUsername());
+
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        return TokenResponse.builder().accessToken(token).refreshToken(refreshToken).build();
+    }
+
+    public void refreshToken(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        String authHeader = req.getHeader(HttpHeaders.AUTHORIZATION);
+        if(authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return;
+        }
+        String refreshToken = authHeader.substring(7);
+        String userEmail = jwtService.extractUsername(refreshToken);
+        if(userEmail != null) {
+            UserDetails userDetails = userService.loadUserByUsername(userEmail);
+            if(jwtService.isValidToken(refreshToken, userDetails)) {
+                String accessToken = jwtService.generateToken(userDetails);
+                TokenResponse tokenResponse = TokenResponse.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken)
+                        .build();
+                jwtService.revokeUserTokens(userEmail);
+                jwtService.saveToken(accessToken, userEmail);
+                new ObjectMapper().writeValue(res.getOutputStream(), tokenResponse);
+            }
+        }
+
     }
 }
