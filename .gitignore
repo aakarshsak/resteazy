@@ -36,5 +36,5 @@
 ### ENV Files ###
 .env
 
-
 ### React Node modules ###
+*/node_modules/
