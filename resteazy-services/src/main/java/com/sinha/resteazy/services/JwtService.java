@@ -123,7 +123,11 @@ public class JwtService {
                 .revoked(false)
                 .userEmail(userEmail)
                 .build();
-        tokenRepository.save(token1);
+        saveToken(token1);
+    }
+
+    public void saveToken(Token token) {
+        tokenRepository.save(token);
     }
 
     public Token getToken(String token) {

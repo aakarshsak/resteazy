@@ -5,10 +5,12 @@ import com.sinha.resteazy.entities.User;
 import com.sinha.resteazy.services.restaurant.RestaurantService;
 import com.sinha.resteazy.entities.Restaurant;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.awt.print.Pageable;
 import java.util.List;
 
 @RestController
@@ -43,9 +45,15 @@ public class RestaurantController {
         return restaurantService.getRestaurantById(id);
     }
 
-    @DeleteMapping("{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<SuccessResponse> deleteRestaurant(@PathVariable long id) {
         Restaurant restaurant = restaurantService.deleteRestaurantById(id);
         return new ResponseEntity<>(new SuccessResponse(restaurant, HttpStatus.ACCEPTED.value()), HttpStatus.ACCEPTED);
     }
+
+    @GetMapping("/find")
+    public ResponseEntity<List<Restaurant>> searchRestaurants(@RequestParam String search) {
+        return new ResponseEntity<>(restaurantService.searchRestaurants(search), HttpStatus.OK);
+    }
+
 }

@@ -40,8 +40,8 @@ public class CustomExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> userNotFoundExceptionHandler(TokenNotFoundException exception) {
-        ErrorResponse response = new ErrorResponse(HttpStatus.NOT_FOUND.value(), exception.getMessage(), System.currentTimeMillis());
+        ErrorResponse response = new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), exception.getMessage(), System.currentTimeMillis());
         logger.error(this.getClass().toString(), exception);
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 }

@@ -58,4 +58,9 @@ public class RestaurantServiceImpl implements RestaurantService {
         restaurantRepository.delete(restaurant);
         return restaurant;
     }
+
+    @Override
+    public List<Restaurant> searchRestaurants(String search) {
+        return restaurantRepository.findByNameContainingIgnoreCase(search);
+    }
 }
